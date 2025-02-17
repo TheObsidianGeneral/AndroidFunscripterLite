@@ -1,0 +1,7 @@
+<resources>
+    <dimen name="button_text_size">12sp</dimen>
+    <dimen name="button_padding">3dp</dimen>
+    <dimen name="button_margin">2dp</dimen>
+    <dimen name="grid_margin">3dp</dimen>
+    <dimen name="guideline_vertical_percent">0.75</dimen>
+</resources>
