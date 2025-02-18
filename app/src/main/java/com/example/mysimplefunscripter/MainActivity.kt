@@ -26,9 +26,9 @@ import org.json.JSONObject
 import java.io.BufferedReader
 import kotlin.math.max
 import kotlin.math.min
-import android.graphics.Path
 import android.os.Handler
 import android.os.Looper
+import kotlin.math.abs
 
 data class ActionPoint(var time: Long, var position: Int)
 
@@ -91,6 +91,24 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.playerView.useController = false
+
+        binding.playerView.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    binding.playerView.useController = true
+                    binding.playerView.showController()
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    handler.postDelayed({
+                        binding.playerView.useController = false
+                    }, 3000)
+                    true
+                }
+                else -> false
+            }
+        }
         setupMenuButton()
         setupButtonClickListeners()
         setupVideoPlaybackListener()
@@ -174,8 +192,24 @@ class MainActivity : AppCompatActivity() {
 
             binding.playerView.apply {
                 player = this@MainActivity.player
-                useController = true
+                useController = false
                 resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+
+                setOnTouchListener { _, event ->
+                    when (event.action) {
+                        MotionEvent.ACTION_UP -> {
+                            if (!useController) {
+                                useController = true
+                                showController()
+                            } else {
+                                hideController()
+                                useController = false
+                            }
+                            true
+                        }
+                        else -> true
+                    }
+                }
             }
 
             player?.apply {
@@ -217,25 +251,54 @@ class MainActivity : AppCompatActivity() {
     private fun setupButtonClickListeners() {
         binding.buttonPrevFrame.setOnClickListener {
             player?.let { player ->
+                binding.playerView.useController = false
                 val stepMs = when (frameStepCounter % 3) {
                     0, 1 -> -33.33
                     else -> -33.34
                 }
                 frameStepCounter = (frameStepCounter + 1) % 3
                 player.seekTo(player.currentPosition + stepMs.toLong())
+                binding.playerView.hideController()
                 drawHeatmap()
             }
         }
 
         binding.buttonNextFrame.setOnClickListener {
             player?.let { player ->
+                binding.playerView.useController = false
                 val stepMs = when (frameStepCounter % 3) {
                     0, 1 -> 33.33
                     else -> 33.34
                 }
                 frameStepCounter = (frameStepCounter + 1) % 3
                 player.seekTo(player.currentPosition + stepMs.toLong())
+                binding.playerView.hideController()
                 drawHeatmap()
+            }
+        }
+
+
+        binding.buttonPrevAction.setOnClickListener {
+            player?.let { player ->
+                binding.playerView.useController = false
+                val currentTime = player.currentPosition
+                findPreviousAction(currentTime)?.let { prevAction ->
+                    player.seekTo(prevAction.time)
+                    binding.playerView.hideController()
+                    drawHeatmap()
+                }
+            }
+        }
+
+        binding.buttonNextAction.setOnClickListener {
+            player?.let { player ->
+                binding.playerView.useController = false
+                val currentTime = player.currentPosition
+                findNextAction(currentTime)?.let { nextAction ->
+                    player.seekTo(nextAction.time)
+                    binding.playerView.hideController()
+                    drawHeatmap()
+                }
             }
         }
         binding.buttonSave.setOnClickListener { saveFunscript() }
@@ -251,10 +314,53 @@ class MainActivity : AppCompatActivity() {
                         currentPoint?.let { point ->
                             val newPosition = minOf(point.position + 5, 100)
                             point.position = newPosition
-
                             selectedActionPoints.clear()
                             selectedActionPoints.add(point)
+                            drawHeatmap()
+                        }
+                    }
+                    return@OnClickListener
+                }
+                R.id.button_minus_0_5 -> {
+                    player?.let { player ->
+                        val currentTime = player.currentPosition
+                        val currentPoint = actionPoints.find { it.time == currentTime }
 
+                        currentPoint?.let { point ->
+                            val newPosition = maxOf(point.position - 5, 0)
+                            point.position = newPosition
+                            selectedActionPoints.clear()
+                            selectedActionPoints.add(point)
+                            drawHeatmap()
+                        }
+                    }
+                    return@OnClickListener
+                }
+                R.id.button_plus_0_1 -> {
+                    player?.let { player ->
+                        val currentTime = player.currentPosition
+                        val currentPoint = actionPoints.find { it.time == currentTime }
+
+                        currentPoint?.let { point ->
+                            val newPosition = minOf(point.position + 1, 100)
+                            point.position = newPosition
+                            selectedActionPoints.clear()
+                            selectedActionPoints.add(point)
+                            drawHeatmap()
+                        }
+                    }
+                    return@OnClickListener
+                }
+                R.id.button_minus_0_1 -> {
+                    player?.let { player ->
+                        val currentTime = player.currentPosition
+                        val currentPoint = actionPoints.find { it.time == currentTime }
+
+                        currentPoint?.let { point ->
+                            val newPosition = maxOf(point.position - 1, 0)
+                            point.position = newPosition
+                            selectedActionPoints.clear()
+                            selectedActionPoints.add(point)
                             drawHeatmap()
                         }
                     }
@@ -280,26 +386,11 @@ class MainActivity : AppCompatActivity() {
             val buttonId = resources.getIdentifier("button_$i", "id", packageName)
             findViewById<Button>(buttonId).setOnClickListener(numberButtonClickListener)
         }
-        binding.buttonPrevAction.setOnClickListener {
-            player?.let { player ->
-                val currentTime = player.currentPosition
-                findPreviousAction(currentTime)?.let { prevAction ->
-                    player.seekTo(prevAction.time)
-                    drawHeatmap()
-                }
-            }
-        }
 
-        binding.buttonNextAction.setOnClickListener {
-            player?.let { player ->
-                val currentTime = player.currentPosition
-                findNextAction(currentTime)?.let { nextAction ->
-                    player.seekTo(nextAction.time)
-                    drawHeatmap()
-                }
-            }
-        }
         binding.buttonPlus05.setOnClickListener(numberButtonClickListener)
+        binding.buttonMinus05.setOnClickListener(numberButtonClickListener)
+        binding.buttonPlus01.setOnClickListener(numberButtonClickListener)
+        binding.buttonMinus01.setOnClickListener(numberButtonClickListener)
         binding.buttonDelete.setOnClickListener {
             deleteSelectedActionPoints()
         }
@@ -497,22 +588,43 @@ class MainActivity : AppCompatActivity() {
         }.sortedBy { it.time }
 
         if (extendedPoints.isNotEmpty()) {
-            val path = Path()
-            var isFirst = true
+            for (i in 0 until extendedPoints.size - 1) {
+                val currentPoint = extendedPoints[i]
+                val nextPoint = extendedPoints[i + 1]
 
-            extendedPoints.forEach { point ->
-                val x = ((point.time - startTime).toFloat() / (timeWindow * 2)) * width
-                val y = height - (point.position.toFloat() / 100 * height)
+                val timeDiff = (nextPoint.time - currentPoint.time) / 1000.0
 
-                if (isFirst) {
-                    path.moveTo(x, y)
-                    isFirst = false
-                } else {
-                    path.lineTo(x, y)
+                val posDiff = nextPoint.position - currentPoint.position
+
+                val speed = abs(posDiff / timeDiff)
+
+                val color = when {
+                    speed >= 600 -> Color.BLUE
+                    speed >= 400 -> Color.RED
+                    speed > 0 -> {
+                        val ratio = (speed / 400.0).coerceIn(0.0, 1.0)
+                        val red = (255.0 * ratio).toInt()
+                        val green = (255.0 * (1.0 - ratio)).toInt()
+                        val blue = (255.0 * (1.0 - ratio)).toInt()
+                        Color.rgb(red, green, blue)
+                    }
+                    else -> Color.WHITE
                 }
-            }
 
-            canvas.drawPath(path, linePaint)
+                val segmentPaint = Paint().apply {
+                    this.color = color
+                    strokeWidth = 3f
+                    isAntiAlias = true
+                    style = Paint.Style.STROKE
+                }
+
+                val x1 = ((currentPoint.time - startTime).toFloat() / (timeWindow * 2)) * width
+                val y1 = height - (currentPoint.position.toFloat() / 100 * height)
+                val x2 = ((nextPoint.time - startTime).toFloat() / (timeWindow * 2)) * width
+                val y2 = height - (nextPoint.position.toFloat() / 100 * height)
+
+                canvas.drawLine(x1, y1, x2, y2, segmentPaint)
+            }
 
             extendedPoints.filter { it.time in startTime..endTime }.forEach { point ->
                 val x = ((point.time - startTime).toFloat() / (timeWindow * 2)) * width
@@ -568,7 +680,7 @@ class MainActivity : AppCompatActivity() {
             override fun run() {
                 if (player?.isPlaying == true) {
                     handler.post { drawHeatmap() }
-                    handler.postDelayed(this, 16) // 약 60fps
+                    handler.postDelayed(this, 16)
                 }
             }
         }
