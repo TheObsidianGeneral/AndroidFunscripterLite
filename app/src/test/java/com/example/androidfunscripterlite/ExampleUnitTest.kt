@@ -1,4 +1,4 @@
-package com.example.mysimplefunscripter
+package com.example.androidfunscripterlite
 
 import org.junit.Test
 

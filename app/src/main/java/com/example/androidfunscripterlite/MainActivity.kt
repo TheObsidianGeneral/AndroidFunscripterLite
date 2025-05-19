@@ -1,8 +1,7 @@
-package com.example.mysimplefunscripter
+package com.example.androidfunscripterlite
 
 import android.content.Intent
 import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.ui.PlayerView
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import android.provider.OpenableColumns
 import android.util.Log
@@ -18,7 +17,7 @@ import android.view.View
 import android.widget.Button
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.example.mysimplefunscripter.databinding.ActivityMainBinding
+import com.example.androidfunscripterlite.databinding.ActivityMainBinding
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
@@ -28,6 +27,11 @@ import kotlin.math.max
 import kotlin.math.min
 import android.os.Handler
 import android.os.Looper
+import android.view.ViewGroup
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import kotlin.math.abs
 
 data class ActionPoint(var time: Long, var position: Int)
@@ -92,6 +96,24 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.playerView.useController = false
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.mainConstraintLayout) { v, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            // Apply the insets as a margin to the view. This solution sets
+            // only the bottom, left, and right dimensions, but you can apply whichever
+            // insets are appropriate to your layout. You can also update the view padding
+            // if that's more appropriate.
+            v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                topMargin = insets.top
+                leftMargin = insets.left
+                bottomMargin = insets.bottom
+                rightMargin = insets.right
+            }
+
+            // Return CONSUMED if you don't want the window insets to keep passing
+            // down to descendant views.
+            WindowInsetsCompat.CONSUMED
+        }
 
         binding.playerView.setOnTouchListener { _, event ->
             when (event.action) {

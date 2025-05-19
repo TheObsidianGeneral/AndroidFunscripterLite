@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.mysimplefunscripter"
+    namespace = "com.example.androidfunscripterlite"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.mysimplefunscripter"
+        applicationId = "com.example.androidfunscripterlite"
         minSdk = 24
         targetSdk = 35
         versionCode = 2
