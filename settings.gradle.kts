@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "My Simple Funscripter"
+rootProject.name = "Android Funscripter Lite"
 include(":app")
  
