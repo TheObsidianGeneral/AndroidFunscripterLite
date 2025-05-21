@@ -28,6 +28,7 @@ import kotlin.math.min
 import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -334,7 +335,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        binding.buttonSave.setOnClickListener { saveFunscript() }
 
         val numberButtonClickListener = View.OnClickListener { view ->
             val button = view as Button
@@ -458,6 +458,8 @@ class MainActivity : AppCompatActivity() {
     }
     private fun saveFunscript() {
         if (videoUri == null) {
+            val toast = Toast.makeText(this, "Failed to save, the video was null.", Toast.LENGTH_SHORT) // in Activity
+            toast.show()
             return
         }
 
@@ -482,6 +484,8 @@ class MainActivity : AppCompatActivity() {
                         outputStream.write(createFunscriptJson().toByteArray())
                     }
                 } catch (e: Exception) {
+                    val toast = Toast.makeText(this, "Failed to save, exception thrown.", Toast.LENGTH_SHORT)
+                    toast.show()
                     e.printStackTrace()
                 }
             }
