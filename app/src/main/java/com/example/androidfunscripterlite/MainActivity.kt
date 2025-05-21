@@ -325,6 +325,17 @@ class MainActivity : AppCompatActivity() {
         }
         binding.buttonSave.setOnClickListener { saveFunscript() }
 
+        binding.buttonPlay.setOnClickListener {
+            player?.let { player ->
+                if (player.isPlaying) {
+                    player.pause()
+                } else {
+                    player.play()
+                }
+            }
+        }
+        binding.buttonSave.setOnClickListener { saveFunscript() }
+
         val numberButtonClickListener = View.OnClickListener { view ->
             val button = view as Button
             when (button.id) {
