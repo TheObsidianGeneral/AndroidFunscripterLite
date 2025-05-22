@@ -29,7 +29,6 @@ import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
@@ -271,6 +270,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
     private var frameStepCounter = 0
+
+
     private fun setupButtonClickListeners() {
         binding.buttonPrevFrame.setOnClickListener {
             player?.let { player ->
@@ -324,9 +325,21 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
         binding.buttonSave.setOnClickListener { saveFunscript() }
+        binding.buttonQuicksave.setOnClickListener { saveFunscript() }
 
         binding.buttonPlay.setOnClickListener {
+            player?.let { player ->
+                if (player.isPlaying) {
+                    player.pause()
+                } else {
+                    player.play()
+                }
+            }
+        }
+
+        binding.buttonPlay2.setOnClickListener {
             player?.let { player ->
                 if (player.isPlaying) {
                     player.pause()
