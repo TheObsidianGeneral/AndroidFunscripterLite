@@ -37,6 +37,8 @@ import kotlin.math.abs
 data class ActionPoint(var time: Long, var position: Int)
 
 class MainActivity : AppCompatActivity() {
+
+    private var funscriptURI : Uri? = null
     private val handler = Handler(Looper.getMainLooper())
     private val openFunscriptLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -50,6 +52,7 @@ class MainActivity : AppCompatActivity() {
                     val jsonString = inputStream.bufferedReader().use(BufferedReader::readText)
                     parseAndApplyFunscript(jsonString)
                 }
+                funscriptURI = it
             } catch (e: Exception) {
                 Log.e("Funscript", "Error loading funscript", e)
                 e.printStackTrace()
@@ -327,7 +330,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.buttonSave.setOnClickListener { saveFunscript() }
-        binding.buttonQuicksave.setOnClickListener { saveFunscript() }
+        binding.buttonQuicksave.setOnClickListener { quickSaveFunscript() }
 
         binding.buttonPlay.setOnClickListener {
             player?.let { player ->
@@ -469,6 +472,39 @@ class MainActivity : AppCompatActivity() {
 
         drawHeatmap()
     }
+
+    private fun quickSaveFunscript() {
+        if (funscriptURI == null) {
+            Toast.makeText(this, "Funscript location not set for quicksave.", Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+
+        funscriptURI?.let { uri ->
+            val json = createFunscriptJson()
+
+            try {
+                contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(json.toByteArray())
+                    // The outputStream will be automatically closed here,
+                    // even if write() throws an exception or if everything is successful.
+                } // ?.use ensures this block only runs if openOutputStream doesn't return null
+
+                Toast.makeText(this, "Quicksaved to $uri", Toast.LENGTH_SHORT).show()
+
+            } catch (e: Exception) {
+                // Log the exception for debugging
+                Log.e("QuickSave", "Error writing to funscriptURI: $uri", e)
+                Toast.makeText(this, "Failed to quicksave: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        } ?: run {
+            // This block executes if funscriptURI is null
+            Toast.makeText(this, "Funscript location not set for quicksave.", Toast.LENGTH_SHORT)
+                .show()
+        }
+    }
+
+
     private fun saveFunscript() {
         if (videoUri == null) {
             val toast = Toast.makeText(this, "Failed to save, the video was null.", Toast.LENGTH_SHORT) // in Activity
@@ -495,6 +531,7 @@ class MainActivity : AppCompatActivity() {
                 try {
                     contentResolver.openOutputStream(uri)?.use { outputStream ->
                         outputStream.write(createFunscriptJson().toByteArray())
+                        funscriptURI = uri
                     }
                 } catch (e: Exception) {
                     val toast = Toast.makeText(this, "Failed to save, exception thrown.", Toast.LENGTH_SHORT)
